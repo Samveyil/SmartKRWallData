@@ -79,7 +79,7 @@ namespace SmartKRWallData.Validation
                 errors.Add("drawing.drawingSet (ADSK_Комплект чертежей): не задан комплект.");
         }
 
-        // Правила для параметров палки — общие с блоками PalkaReinforcementData (PalkaRules),
+        // Правила для параметров палки — общие с блоками ReinforcementData2D (PalkaRules),
         // здесь к ним добавляются проверки ES-полей.
 
         private static void ValidateVertArm(List<string> errors, VertArmSection v)

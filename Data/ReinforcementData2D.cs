@@ -11,7 +11,7 @@ namespace SmartKRWallData.Data
     /// <c>XxxData.None</c>. Неверные значения — <see cref="VertArmDesignException"/>.
     /// Флаги «.Вкл» вычисляются: диаметр (длина зоны) > 0 — элемент есть.
     /// </summary>
-    public sealed class PalkaReinforcementData
+    public sealed class ReinforcementData2D
     {
         /// <param name="vertArm">
         /// Вертикальное армирование.
@@ -40,7 +40,7 @@ namespace SmartKRWallData.Data
         /// <param name="endNode">
         /// Узел в конце линии палки. Нет — <see cref="NodeData.None"/>.
         /// </param>
-        public PalkaReinforcementData(
+        public ReinforcementData2D(
             VertArmData vertArm,
             VertArmDopData vertArmDop,
             VertArmTortsaData vertArmTortsa,
@@ -68,11 +68,17 @@ namespace SmartKRWallData.Data
         /// <summary>
         /// Вертикальное армирование.
         /// </summary>
+        /// <remarks>
+        /// None для перемычек над проемами, где верт. арм. из хомутов или двух П-к
+        /// </remarks>
         public VertArmData VertArm { get; }
 
         /// <summary>
         /// Дополнительное вертикальное армирование.
         /// </summary>
+        /// <remarks>
+        /// Когда верхняя стена тоньше нижней, и не подходит Z-ый стержень
+        /// </remarks>
         public VertArmDopData VertArmDop { get; }
 
         /// <summary>
@@ -334,18 +340,24 @@ namespace SmartKRWallData.Data
             public required int Step { get; init; }
 
             /// <summary>
-            /// ВертАрмТорца_Отступ, мм.
+            /// ВертАрмТорца_Отступ от Торца до центра арматуры, мм.
             /// </summary>
             public required int Offset { get; init; }
 
             /// <summary>
             /// ВертАрмТорца_КоличВРяду.
             /// </summary>
+            /// <remarks>
+            /// Вдоль толщины (поперек стены) от 2 до 3-ех(при необходимости усиления)
+            /// </remarks>
             public required int CountInRow { get; init; }
 
             /// <summary>
             /// ВертАрмТорца_КоличНаТорец.
             /// </summary>
+            /// <remarks>
+            /// Суммарное количество стержней в торце
+            /// </remarks>
             public required int CountPerEdge { get; init; }
 
             internal List<string> Errors() => PalkaRules.VertArmTortsa(Diameter, Step, Offset, CountInRow, CountPerEdge);
@@ -432,16 +444,25 @@ namespace SmartKRWallData.Data
             /// <summary>
             /// ГорАрм_ОтступОтТорца, мм.
             /// </summary>
+            /// <remarks>
+            /// Принимаем всегда 30мм
+            /// </remarks>
             public required int OffsetFromEdge { get; init; }
 
             /// <summary>
             /// ГорАрм_ПерепадСверху.Вкл.
             /// </summary>
+            /// <remarks>
+            /// Уведомление о необходимсоти проверки, когда сверху есть перепад, а так всегда = false
+            /// </remarks>
             public required bool InTopDrop { get; init; }
 
             /// <summary>
             /// Нижняя зона учащения.
             /// </summary>
+            /// <remarks>
+            /// Превуалирует над основным армирование (если не создано как None, то основное армирование начинается после нее)
+            /// </remarks>
             public required ZoneData BottomZone { get; init; }
 
             /// <summary>
@@ -465,54 +486,62 @@ namespace SmartKRWallData.Data
 
                 return errors;
             }
-        }
 
-        /// <summary>
-        /// Зона учащения ГорАрм.
-        /// </summary>
-        public sealed class ZoneData
-        {
-            /// <param name="length">
-            /// OLP_ГорАрм_Нижняя/Верхняя зона учащения, мм. 0 — зоны нет.
-            /// </param>
-            /// <param name="step">
-            /// ГорАрм_ДопШагСнизу/Сверху, мм.
-            /// </param>
-            [SetsRequiredMembers]
-            public ZoneData(int length, int step)
+            /// <summary>
+            /// Зона учащения ГорАрм.
+            /// </summary>
+            public sealed class ZoneData
             {
-                Length = length;
-                Step = step;
+                /// <param name="length">
+                /// OLP_ГорАрм_Нижняя/Верхняя зона учащения, мм. 0 — зоны нет.
+                /// </param>
+                /// <param name="step">
+                /// ГорАрм_ДопШагСнизу/Сверху, мм.
+                /// </param>
+                [SetsRequiredMembers]
+                public ZoneData(int length, int step)
+                {
+                    Length = length;
+                    Step = step;
+                }
+
+                /// <summary>
+                /// Зоны нет.
+                /// </summary>
+                public static ZoneData None => new ZoneData(0, 0);
+
+                /// <summary>
+                /// Длина зоны (по высоте), мм.
+                /// </summary>
+                public required int Length { get; init; }
+
+                /// <summary>
+                /// Шаг в зоне, мм.
+                /// </summary>
+                public required int Step { get; init; }
             }
-
-            /// <summary>
-            /// Зоны нет.
-            /// </summary>
-            public static ZoneData None => new ZoneData(0, 0);
-
-            /// <summary>
-            /// Длина зоны, мм.
-            /// </summary>
-            public required int Length { get; init; }
-
-            /// <summary>
-            /// Шаг в зоне, мм.
-            /// </summary>
-            public required int Step { get; init; }
         }
 
         /// <summary>
-        /// Горизонтальный П-стержень (ГорПка). Только стена.
+        /// Горизонтальный П-стержень (ГорПка) - в торцах.
         /// Пока пустой: диаметр берётся из ГорАрм, наличие в узле — <see cref="NodeData.GorPka"/>.
         /// </summary>
         public sealed class GorPkaData
         {
+            public bool isNone = false;
+
             public GorPkaData() { }
 
             /// <summary>
             /// ГорПка нет. У пилона — всегда.
             /// </summary>
-            public static GorPkaData None => new GorPkaData();
+            public static GorPkaData None()
+            {
+                var gkp = new GorPkaData();
+                gkp.isNone = true;
+
+                return gkp;
+            }
 
             // TODO ГорПка_Диаметр: пока не задаётся, в палку пишется диаметр ГорАрм.
             ///// <summary>
@@ -569,6 +598,9 @@ namespace SmartKRWallData.Data
             /// <summary>
             /// ГорПка_Начало/Конец.Вкл.
             /// </summary>
+            ///<remarks>
+            /// Для рядовых зон - отключаем
+            ///</remarks>
             public required bool GorPka { get; init; }
 
             /// <summary>
@@ -583,8 +615,11 @@ namespace SmartKRWallData.Data
         }
 
         /// <summary>
-        /// Вертикальный П-стержень / хомут (ВертПка).
+        ///  Обрамление вертикальных стержней П-ой или Вертикальный хомут(без верт. стержней) (ВертПка).
         /// </summary>
+        /// <remarks>
+        /// участки над проемами / плитами
+        /// </remarks>
         public sealed class VertPkaData
         {
             public VertPkaData() { }
@@ -641,6 +676,9 @@ namespace SmartKRWallData.Data
             /// <summary>
             /// Шпилька_Диаметр, мм.
             /// </summary>
+            /// <remarks>
+            /// По умолчанию 8
+            /// </remarks>
             public required int Diameter { get; init; }
 
             internal List<string> Errors() => PalkaRules.Diameter("Шпилька_Диаметр", Diameter);

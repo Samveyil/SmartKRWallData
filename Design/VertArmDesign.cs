@@ -30,7 +30,7 @@ namespace SmartKRWallData.Design
         /// <param name="reinforcement">Армирование в параметрах палки.</param>
         /// <param name="wall">Геометрия стены.</param>
         /// <param name="drawing">Оформление: марка, комплект, этаж.</param>
-        public VertArmDesign(PalkaReinforcementData reinforcement, WallGeometryData wall, DrawingInfoData drawing)
+        public VertArmDesign(ReinforcementData2D reinforcement, WallGeometryData wall, DrawingInfoData drawing)
         {
             if (reinforcement == null)
                 throw new ArgumentNullException(nameof(reinforcement));
@@ -98,7 +98,7 @@ namespace SmartKRWallData.Design
             Shpilka = new ShpilkaSection();
         }
 
-        private void Apply(PalkaReinforcementData r)
+        private void Apply(ReinforcementData2D r)
         {
             VertArm.Diameter = r.VertArm.Diameter;
             VertArm.Row2Diameter = r.VertArm.Row2Diameter;
@@ -135,7 +135,7 @@ namespace SmartKRWallData.Design
             Shpilka.Diameter = r.Shpilka.Diameter;
         }
 
-        private static void Apply(NodeSection node, PalkaReinforcementData.NodeData n)
+        private static void Apply(NodeSection node, ReinforcementData2D.NodeData n)
         {
             node.VertArmTortsa = n.VertArmTortsa;
             node.GorPka = n.GorPka;
